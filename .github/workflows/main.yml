@@ -1,4 +1,4 @@
-name: Run stock Job with Gradle
+name: Run Stock Job
 
 on:
   schedule:
