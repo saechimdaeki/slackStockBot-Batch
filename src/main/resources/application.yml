@@ -1,0 +1,11 @@
+slack:
+  token: ${SLACK_TOKEN}
+  channel: '#stocknoti'
+
+stock:
+  global: 'https://www.hankyung.com/globalmarket/news-globalmarket'
+  korea: 'https://www.hankyung.com/koreamarket/news/all-news'
+  koreaGraph: 'https://finance.naver.com/sise/'
+spring:
+  main:
+    web-application-type: none
