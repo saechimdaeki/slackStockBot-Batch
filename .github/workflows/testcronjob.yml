@@ -1,0 +1,12 @@
+name: "cron job example"
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+
+jobs:
+  hello:
+    name: "Say hello"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display message
+        run: echo "Hello from GitHub Actions!"
