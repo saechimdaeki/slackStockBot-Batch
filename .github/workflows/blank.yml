@@ -2,8 +2,8 @@ name: Run stock Job with Gradle
 
 on:
   schedule:
-    # 매 2시간마다 실행 (UTC 기준)
-    - cron: '*/5 * * * *'
+    - cron: '0 * * * *'
+
 
 jobs:
   run-batch:
