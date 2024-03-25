@@ -50,13 +50,14 @@ class StockJobConfig(
     @Bean
     fun stockGraphTasklet(): Tasklet {
         return Tasklet { _, chunkContext ->
-            val context = chunkContext.stepContext
+            val jobExecutionContext = chunkContext.stepContext
                     .stepExecution
+                    .jobExecution
                     .executionContext
 
             val sendStockGraph = slackService.sendStockGraph()
 
-            context.put("stockGraph", sendStockGraph)
+            jobExecutionContext.put("stockGraph", sendStockGraph)
 
             RepeatStatus.FINISHED
         }
@@ -66,29 +67,31 @@ class StockJobConfig(
     fun koreaStockTasklet(): Tasklet {
         return Tasklet { _, chunkContext ->
 
-            val context = chunkContext.stepContext
+            val jobExecutionContext = chunkContext.stepContext
                     .stepExecution
+                    .jobExecution
                     .executionContext
 
 
             val sendKoreaStockInfo = slackService.sendKoreaStockInfo()
 
-            context.put("koreaStock", sendKoreaStockInfo)
+            jobExecutionContext.put("koreaStock", sendKoreaStockInfo)
 
             RepeatStatus.FINISHED
         }
     }
-//
+
     @Bean
     fun globalStockTasklet(): Tasklet {
         return Tasklet { _, chunkContext ->
 
-            val context = chunkContext.stepContext
+            val jobExecutionContext = chunkContext.stepContext
                     .stepExecution
+                    .jobExecution
                     .executionContext
 
-            val stockGraph = context.getString("stockGraph")
-            val koreaStock = context.getString("koreaStock")
+            val stockGraph = jobExecutionContext.getString("stockGraph")
+            val koreaStock = jobExecutionContext.getString("koreaStock")
 
             slackService.sendGlobalStockInfo(stockGraph, koreaStock)
             RepeatStatus.FINISHED

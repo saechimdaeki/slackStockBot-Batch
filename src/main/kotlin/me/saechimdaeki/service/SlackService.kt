@@ -26,7 +26,7 @@ class SlackService {
     @Value("\${stock.koreaGraph}")
     var koreaChart: String? = null
 
-    fun sendStockGraph() : String {
+    fun sendStockGraph(): String {
         koreaChart?.let {
             val connection = CrawlerUtil.getConnection(it)
             val doc = connection.get()
@@ -43,7 +43,7 @@ class SlackService {
         return ""
     }
 
-    fun sendKoreaStockInfo() : String {
+    fun sendKoreaStockInfo(): String {
         koreaUrl?.let {
             val connection = CrawlerUtil.getConnection(it)
             val doc = connection.get()
@@ -59,7 +59,7 @@ class SlackService {
         return ""
     }
 
-    fun sendGlobalStockInfo(graphMessage : String, koreaStockInfo : String) {
+    fun sendGlobalStockInfo(graphMessage: String, koreaStockInfo: String) {
         val sb = StringBuilder()
         sb.append(graphMessage).append(koreaStockInfo)
         globalUrl?.let {
