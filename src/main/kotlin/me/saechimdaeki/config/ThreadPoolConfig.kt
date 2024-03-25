@@ -14,7 +14,7 @@ class ThreadPoolConfig {
             this.corePoolSize = 10
             this.maxPoolSize = 20
             setThreadNamePrefix("stockThread-")
-            setQueueCapacity(500)
+            queueCapacity = 500
             setRejectedExecutionHandler(ThreadPoolExecutor.CallerRunsPolicy())
             initialize()
         }
