@@ -27,6 +27,9 @@ class SlackService {
     @Value("\${stock.koreaGraph}")
     lateinit var koreaChart: String
 
+    @Value("\${stock.invest}")
+    lateinit var investingUrl : String
+
     fun sendStockGraph(): String {
         return getCrawledInfo(koreaChart) { doc ->
             val koSPINow = doc.select("#KOSPI_now").first()?.text()
@@ -54,17 +57,13 @@ class SlackService {
         }
     }
 
-    fun sendGlobalStockInfo(graphMessage: String, koreaStockInfo: String) {
-        val message = buildString {
-            append(graphMessage).append(koreaStockInfo)
-            append(getCrawledInfo(globalUrl) { doc ->
-                doc.select(".news-item .news-tit a").joinToString(separator = "\n", prefix = "\n ===================================== \n :stars:  해외 증시 주요 뉴스 입니다 :stars:  \n") {
-                    val href = it.attr("href")
-                    "<$href|${it.text()}>\n"
-                }
-            })
+    fun sendGlobalStockInfo() :String {
+        return getCrawledInfo(globalUrl) { doc ->
+            doc.select(".news-item .news-tit a").joinToString(separator = "\n", prefix = "\n ===================================== \n :stars:  해외 증시 주요 뉴스 입니다 :stars:  \n") {
+                val href = it.attr("href")
+                "<$href|${it.text()}>\n"
+            }
         }
-        sendSlackMessage(message)
     }
 
     @Async("stockThreadExecutor")
@@ -78,5 +77,36 @@ class SlackService {
         val connection = CrawlerUtil.getConnection(url)
         val doc = connection.get()
         return transform(doc)
+    }
+
+    fun sendInvestingAnalyze(stockGraph: String, koreaStock: String, globalStock: String) {
+        val message = buildString {
+            append(stockGraph).append(koreaStock).append(globalStock)
+            append(getCrawledInfo(investingUrl) { doc ->
+                val links = doc.select("#contentSection .textDiv a")
+                val filteredLinks = links.fold("") { acc, element ->
+                    var href = element.attr("href")
+                    when {
+                        !href.startsWith("http") -> {
+                            href = INVEST_UTL + href
+                        }
+                    }
+                    when {
+                        element.hasAttr("title") && element.attr("title").isNotEmpty() -> {
+                            acc + "<$href|${element.text()}>\n"
+                        }
+                        else -> {
+                            acc
+                        }
+                    }
+                }
+                "\n ===================================== \n :earth_americas:  인베스팅 주식 견해 입니다 :earth_americas:   \n$filteredLinks"
+            })
+        }
+        sendSlackMessage(message)
+    }
+
+    companion object {
+        const val INVEST_UTL = "https://kr.investing.com"
     }
 }

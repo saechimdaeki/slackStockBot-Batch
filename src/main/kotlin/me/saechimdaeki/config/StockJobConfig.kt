@@ -10,7 +10,6 @@ import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.core.scope.context.ChunkContext
 import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.batch.core.step.tasklet.Tasklet
-import org.springframework.batch.item.ExecutionContext
 import org.springframework.batch.repeat.RepeatStatus
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -48,6 +47,14 @@ class StockJobConfig(
             .build()
     }
 
+    @Bean
+    fun investingAnalyze() : Step {
+        val stepBuilderOne = StepBuilder("investingAnalyze", jobRepository)
+        return stepBuilderOne
+            .tasklet(investingAnalyzeTasklet(), platformTransactionManager)
+            .build()
+    }
+
 
     @Bean
     fun stockGraphTasklet(): Tasklet {
@@ -82,13 +89,28 @@ class StockJobConfig(
 
             val jobExecutionContext = getExecutionContext(chunkContext)
 
-            val stockGraph = jobExecutionContext.getString("stockGraph")
-            val koreaStock = jobExecutionContext.getString("koreaStock")
+            val globalStock = slackService.sendGlobalStockInfo()
+            jobExecutionContext.put("globalStock", globalStock)
 
-            slackService.sendGlobalStockInfo(stockGraph, koreaStock)
             RepeatStatus.FINISHED
         }
     }
+
+    @Bean
+    fun investingAnalyzeTasklet(): Tasklet {
+        return Tasklet { _, chunkContext ->
+
+            val jobExecutionContext = getExecutionContext(chunkContext)
+
+            val stockGraph = jobExecutionContext.getString("stockGraph")
+            val koreaStock = jobExecutionContext.getString("koreaStock")
+            val globalStock = jobExecutionContext.getString("globalStock")
+
+           slackService.sendInvestingAnalyze(stockGraph, koreaStock,globalStock)
+            RepeatStatus.FINISHED
+        }
+    }
+
 
     private fun getExecutionContext(chunkContext: ChunkContext) = chunkContext.stepContext
         .stepExecution
@@ -102,6 +124,7 @@ class StockJobConfig(
             .start(stockGraph())
             .next(koreaStock())
             .next(globalStock())
+            .next(investingAnalyze())
             .build()
     }
 }
