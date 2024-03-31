@@ -6,6 +6,7 @@ stock:
   global: 'https://www.hankyung.com/globalmarket/news-globalmarket'
   korea: 'https://www.hankyung.com/koreamarket/news/all-news'
   koreaGraph: 'https://finance.naver.com/sise/'
+  invest: 'https://kr.investing.com/analysis/stock-markets'
 spring:
   main:
     web-application-type: none
