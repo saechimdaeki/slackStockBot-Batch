@@ -1,8 +1,9 @@
-name: Run Stock Job with Gradle
+name: Run stock Job with Gradle
 
 on:
   schedule:
-    - cron: '0,30 12-14 * * 0'
+    - cron: '*/30 * * * *'
+
 
 jobs:
   run-batch:
