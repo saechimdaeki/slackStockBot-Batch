@@ -2,9 +2,7 @@ name: Run Stock Job with Gradle
 
 on:
   schedule:
-    - cron: '0-30/30 0-19 * * 1-5' # 월요일부터 금요일까지, 0시부터 19시까지 매 30분마다 실행
-    - cron: '0-30/30 21-23 * * 0' # 일요일, 21시부터 23시까지 매 30분마다 실행
-
+    - cron: '0-30/30 0-19 * * 1-5'
 jobs:
   run-batch:
     runs-on: ubuntu-latest
