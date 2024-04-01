@@ -1,6 +1,8 @@
 package me.saechimdaeki.service
 
 
+import com.slack.api.Slack
+import com.slack.api.methods.request.chat.ChatPostMessageRequest
 import me.saechimdaeki.util.CrawlerUtil
 import org.jsoup.nodes.Document
 import org.springframework.beans.factory.annotation.Value
@@ -14,8 +16,7 @@ class SlackService(
     @Value("\${stock.global}") private val globalUrl: String,
     @Value("\${stock.korea}") private val koreaUrl: String,
     @Value("\${stock.koreaGraph}") private val koreaChart: String,
-    @Value("\${stock.invest}") private val investingUrl: String,
-    private val asyncService: AsyncService
+    @Value("\${stock.invest}") private val investingUrl: String
 ) {
 
     fun sendInvestingAnalyze() {
@@ -23,7 +24,16 @@ class SlackService(
         val koreaStock = buildKoreaStockInfoMessage()
         val globalStock = buildGlobalStockInfoMessage()
         val investingAnalyze = buildInvestingAnalyzeMessage()
-        asyncService.sendSlackMessage("$stockGraph$koreaStock$globalStock$investingAnalyze",token, channel)
+        sendSlackMessage("$stockGraph$koreaStock$globalStock$investingAnalyze")
+    }
+
+    fun sendSlackMessage(message: String) {
+        Slack.getInstance().methods(token).chatPostMessage(
+            ChatPostMessageRequest.builder()
+                .channel(channel)
+                .text(message)
+                .build()
+        )
     }
 
     private fun buildStockGraphMessage() = getCrawledInfo(koreaChart, ::parseStockGraph)
