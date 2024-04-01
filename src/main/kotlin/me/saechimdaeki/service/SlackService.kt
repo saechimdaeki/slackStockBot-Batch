@@ -16,25 +16,16 @@ class SlackService(
     @Value("\${stock.global}") private val globalUrl: String,
     @Value("\${stock.korea}") private val koreaUrl: String,
     @Value("\${stock.koreaGraph}") private val koreaChart: String,
-    @Value("\${stock.invest}") private val investingUrl: String
+    @Value("\${stock.invest}") private val investingUrl: String,
+    private val asyncService: AsyncService
 ) {
-
-    @Async("stockThreadExecutor")
-    fun sendSlackMessage(message: String) {
-        Slack.getInstance().methods(token).chatPostMessage(
-            ChatPostMessageRequest.builder()
-                .channel(channel)
-                .text(message)
-                .build()
-        )
-    }
 
     fun sendInvestingAnalyze() {
         val stockGraph = buildStockGraphMessage()
         val koreaStock = buildKoreaStockInfoMessage()
         val globalStock = buildGlobalStockInfoMessage()
         val investingAnalyze = buildInvestingAnalyzeMessage()
-        sendSlackMessage("$stockGraph$koreaStock$globalStock$investingAnalyze")
+        asyncService.sendSlackMessage("$stockGraph$koreaStock$globalStock$investingAnalyze",token, channel)
     }
 
     private fun buildStockGraphMessage() = getCrawledInfo(koreaChart, ::parseStockGraph)
@@ -90,7 +81,7 @@ class SlackService(
             }
             when {
                 element.hasAttr("title") && element.attr("title").isNotEmpty() -> {
-                    val date = element.parent().select(".articleDetails .date").text() 
+                    val date = element.parent().select(".articleDetails .date").text()
                     acc + "<$href|${element.text()}> - $date\n"
                 }
                 else -> {
