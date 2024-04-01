@@ -10,33 +10,58 @@ import org.springframework.stereotype.Service
 
 
 @Service
-class SlackService {
+class SlackService(
+    @Value("\${slack.token}") private val token: String,
+    @Value("\${slack.channel}") private val channel: String,
+    @Value("\${stock.global}") private val globalUrl: String,
+    @Value("\${stock.korea}") private val koreaUrl: String,
+    @Value("\${stock.koreaGraph}") private val koreaChart: String,
+    @Value("\${stock.invest}") private val investingUrl: String
+) {
 
-    @Value("\${slack.token}")
-    lateinit var token: String
+    fun sendStockGraph() = sendSlackMessage(buildStockGraphMessage())
 
-    @Value("\${slack.channel}")
-    lateinit var channel: String
+    fun sendKoreaStockInfo() = sendSlackMessage(buildKoreaStockInfoMessage())
 
-    @Value("\${stock.global}")
-    lateinit var globalUrl: String
+    fun sendGlobalStockInfo() = sendSlackMessage(buildGlobalStockInfoMessage())
 
-    @Value("\${stock.korea}")
-    lateinit var koreaUrl: String
+    @Async("stockThreadExecutor")
+    fun sendSlackMessage(message: String) {
+        Slack.getInstance().methods(token).chatPostMessage(
+            ChatPostMessageRequest.builder()
+                .channel(channel)
+                .text(message)
+                .build()
+        )
+    }
 
-    @Value("\${stock.koreaGraph}")
-    lateinit var koreaChart: String
+    fun sendInvestingAnalyze() {
+        val stockGraph = buildStockGraphMessage()
+        val koreaStock = buildKoreaStockInfoMessage()
+        val globalStock = buildGlobalStockInfoMessage()
+        val investingAnalyze = buildInvestingAnalyzeMessage()
+        sendSlackMessage("$stockGraph$koreaStock$globalStock$investingAnalyze")
+    }
 
-    @Value("\${stock.invest}")
-    lateinit var investingUrl : String
+    private fun buildStockGraphMessage() = getCrawledInfo(koreaChart, ::parseStockGraph)
 
-    fun sendStockGraph(): String {
-        return getCrawledInfo(koreaChart) { doc ->
-            val koSPINow = doc.select("#KOSPI_now").first()?.text()
-            val koSPIPointChange = doc.select("#KOSPI_change").first()?.text()
-            val kosDAQNow = doc.select("#KOSDAQ_now").first()?.text()
-            val kosDAQPointChange = doc.select("#KOSDAQ_change").first()?.text()
-            """
+    private fun buildKoreaStockInfoMessage() = getCrawledInfo(koreaUrl, ::parseKoreaStockInfo)
+
+    private fun buildGlobalStockInfoMessage() = getCrawledInfo(globalUrl, ::parseGlobalStockInfo)
+
+    private fun buildInvestingAnalyzeMessage() = getCrawledInfo(investingUrl, ::parseInvestingAnalyze)
+
+    private fun getCrawledInfo(url: String, transform: (Document) -> String): String {
+        val doc = CrawlerUtil.getConnection(url).get()
+        return transform(doc)
+    }
+
+    private fun parseStockGraph(doc: Document): String {
+        val koSPINow = doc.select("#KOSPI_now").first()?.text()
+        val koSPIPointChange = doc.select("#KOSPI_change").first()?.text()
+        val kosDAQNow = doc.select("#KOSDAQ_now").first()?.text()
+        val kosDAQPointChange = doc.select("#KOSDAQ_change").first()?.text()
+        return """
             |:chart_with_upwards_trend: :chart_with_upwards_trend:
             |
             |성공적인 익절 기원합니다
@@ -44,67 +69,35 @@ class SlackService {
             |코스피 변동 사항 : $koSPIPointChange
             |코스닥 지수입니다 : $kosDAQNow
             |코스닥 변동 사항 : $kosDAQPointChange
-            """.trimMargin()
+        """.trimMargin()
+    }
+
+    private fun parseKoreaStockInfo(doc: Document): String {
+        return doc.select(".list_major a").joinToString(separator = "\n", prefix = "\n=====================================\n:star2: 국내 증시 주요 뉴스 입니다 :star2:\n") {
+            val href = it.attr("href")
+            "<$href|${it.text()}>\n"
         }
     }
 
-    fun sendKoreaStockInfo(): String {
-        return getCrawledInfo(koreaUrl) { doc ->
-            doc.select(".list_major a").joinToString(separator = "\n", prefix = "\n ===================================== \n :star2: 국내 증시 주요 뉴스 입니다 :star2:  \n") {
-                val href = it.attr("href")
-                "<$href|${it.text()}>\n"
-            }
+    private fun parseGlobalStockInfo(doc: Document): String {
+        return doc.select(".news-item .news-tit a").joinToString(separator = "\n", prefix = "\n=====================================\n:stars: 해외 증시 주요 뉴스 입니다 :stars:\n") {
+            val href = it.attr("href")
+            "<$href|${it.text()}>\n"
         }
     }
 
-    fun sendGlobalStockInfo() :String {
-        return getCrawledInfo(globalUrl) { doc ->
-            doc.select(".news-item .news-tit a").joinToString(separator = "\n", prefix = "\n ===================================== \n :stars:  해외 증시 주요 뉴스 입니다 :stars:  \n") {
-                val href = it.attr("href")
-                "<$href|${it.text()}>\n"
-            }
-        }
-    }
-
-    @Async("stockThreadExecutor")
-    fun sendSlackMessage(message: String) {
-        val methods = Slack.getInstance().methods(token)
-        val request = ChatPostMessageRequest.builder().channel(channel).text(message).build()
-        methods.chatPostMessage(request)
-    }
-
-    private fun getCrawledInfo(url: String, transform: (doc: Document) -> String): String {
-        val connection = CrawlerUtil.getConnection(url)
-        val doc = connection.get()
-        return transform(doc)
-    }
-
-    fun sendInvestingAnalyze(stockGraph: String, koreaStock: String, globalStock: String) {
-        val message = buildString {
-            append(stockGraph).append(koreaStock).append(globalStock)
-            append(getCrawledInfo(investingUrl) { doc ->
-                val linksWithDate = doc.select("#contentSection .textDiv a").fold("") { acc, element ->
-                    var href = element.attr("href")
-                    when {
-                        !href.startsWith("http") -> {
-                            href = INVEST_URL + href
-                        }
-                    }
-                    when {
-                        element.hasAttr("title") && element.attr("title").isNotEmpty() -> {
-                            // 연관된 date 값을 찾습니다. 구조에 따라 적절히 수정할 필요가 있습니다.
-                            val date = element.parent().select(".articleDetails .date").text() // 부모 또는 관련 요소에서 date를 찾음
-                            acc + "<$href|${element.text()}> - $date\n"
-                        }
-                        else -> {
-                            acc
-                        }
-                    }
+    private fun parseInvestingAnalyze(doc: Document): String {
+        val linksWithDate = doc.select("#contentSection .textDiv a").fold("") { acc, element ->
+            var href = element.attr("href")
+            when {
+                !href.startsWith("http") -> {
+                    href = "$INVEST_URL$href"
                 }
-                "\n ===================================== \n :earth_americas:  인베스팅 주식 견해 입니다 :earth_americas:   \n$linksWithDate"
-            })
+            }
+            val date = element.parent().select(".articleDetails .date").text() // Assumes date is in a specific format and location
+            acc + "<$href|${element.text()}> - $date\n"
         }
-        sendSlackMessage(message)
+        return "\n=====================================\n:earth_americas: 인베스팅 주식 견해 입니다 :earth_americas:\n$linksWithDate"
     }
 
     companion object {
