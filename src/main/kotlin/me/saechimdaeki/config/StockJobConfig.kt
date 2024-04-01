@@ -24,107 +24,27 @@ class StockJobConfig(
 ) {
 
     @Bean
-    fun stockGraph(): Step {
-        val stepBuilderOne = StepBuilder("stepGraph", jobRepository)
-        return stepBuilderOne
-            .tasklet(stockGraphTasklet(), platformTransactionManager)
-            .build()
-    }
-
-    @Bean
-    fun koreaStock(): Step {
-        val stepBuilderOne = StepBuilder("koreaStock", jobRepository)
-        return stepBuilderOne
-            .tasklet(koreaStockTasklet(), platformTransactionManager)
-            .build()
-    }
-
-    @Bean
-    fun globalStock(): Step {
-        val stepBuilderOne = StepBuilder("globalStock", jobRepository)
-        return stepBuilderOne
-            .tasklet(globalStockTasklet(), platformTransactionManager)
-            .build()
-    }
-
-    @Bean
-    fun investingAnalyze() : Step {
+    fun investingAnalyze(): Step {
         val stepBuilderOne = StepBuilder("investingAnalyze", jobRepository)
         return stepBuilderOne
-            .tasklet(investingAnalyzeTasklet(), platformTransactionManager)
+            .tasklet(investTasklet(), platformTransactionManager)
             .build()
     }
 
 
     @Bean
-    fun stockGraphTasklet(): Tasklet {
-        return Tasklet { _, chunkContext ->
-            val jobExecutionContext = getExecutionContext(chunkContext)
-
-            val sendStockGraph = slackService.sendStockGraph()
-
-            jobExecutionContext.put("stockGraph", sendStockGraph)
-
+    fun investTasklet(): Tasklet {
+        return Tasklet { _, _ ->
+            slackService.sendInvestingAnalyze()
             RepeatStatus.FINISHED
         }
     }
-
-    @Bean
-    fun koreaStockTasklet(): Tasklet {
-        return Tasklet { _, chunkContext ->
-
-            val jobExecutionContext = getExecutionContext(chunkContext)
-
-            val sendKoreaStockInfo = slackService.sendKoreaStockInfo()
-
-            jobExecutionContext.put("koreaStock", sendKoreaStockInfo)
-
-            RepeatStatus.FINISHED
-        }
-    }
-
-    @Bean
-    fun globalStockTasklet(): Tasklet {
-        return Tasklet { _, chunkContext ->
-
-            val jobExecutionContext = getExecutionContext(chunkContext)
-
-            val globalStock = slackService.sendGlobalStockInfo()
-            jobExecutionContext.put("globalStock", globalStock)
-
-            RepeatStatus.FINISHED
-        }
-    }
-
-    @Bean
-    fun investingAnalyzeTasklet(): Tasklet {
-        return Tasklet { _, chunkContext ->
-
-            val jobExecutionContext = getExecutionContext(chunkContext)
-
-            val stockGraph = jobExecutionContext.getString("stockGraph")
-            val koreaStock = jobExecutionContext.getString("koreaStock")
-            val globalStock = jobExecutionContext.getString("globalStock")
-
-           slackService.sendInvestingAnalyze(stockGraph, koreaStock,globalStock)
-            RepeatStatus.FINISHED
-        }
-    }
-
-
-    private fun getExecutionContext(chunkContext: ChunkContext) = chunkContext.stepContext
-        .stepExecution
-        .jobExecution
-        .executionContext
 
     @Bean
     fun demoJob(): Job {
         return JobBuilder("stockJob", jobRepository)
             .incrementer(RunIdIncrementer())
-            .start(stockGraph())
-            .next(koreaStock())
-            .next(globalStock())
-            .next(investingAnalyze())
+            .start(investingAnalyze())
             .build()
     }
 }

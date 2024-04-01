@@ -19,12 +19,6 @@ class SlackService(
     @Value("\${stock.invest}") private val investingUrl: String
 ) {
 
-    fun sendStockGraph() = sendSlackMessage(buildStockGraphMessage())
-
-    fun sendKoreaStockInfo() = sendSlackMessage(buildKoreaStockInfoMessage())
-
-    fun sendGlobalStockInfo() = sendSlackMessage(buildGlobalStockInfoMessage())
-
     @Async("stockThreadExecutor")
     fun sendSlackMessage(message: String) {
         Slack.getInstance().methods(token).chatPostMessage(
