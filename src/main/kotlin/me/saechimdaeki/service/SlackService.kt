@@ -1,11 +1,9 @@
 package me.saechimdaeki.service
 
-import com.slack.api.Slack
-import com.slack.api.methods.request.chat.ChatPostMessageRequest
+
 import me.saechimdaeki.util.CrawlerUtil
 import org.jsoup.nodes.Document
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 
 
