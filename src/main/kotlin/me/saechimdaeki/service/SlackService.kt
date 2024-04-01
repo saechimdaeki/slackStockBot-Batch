@@ -88,8 +88,15 @@ class SlackService(
                     href = "$INVEST_URL$href"
                 }
             }
-            val date = element.parent().select(".articleDetails .date").text() // Assumes date is in a specific format and location
-            acc + "<$href|${element.text()}> - $date\n"
+            when {
+                element.hasAttr("title") && element.attr("title").isNotEmpty() -> {
+                    val date = element.parent().select(".articleDetails .date").text() 
+                    acc + "<$href|${element.text()}> - $date\n"
+                }
+                else -> {
+                    acc
+                }
+            }
         }
         return "\n=====================================\n:earth_americas: 인베스팅 주식 견해 입니다 :earth_americas:\n$linksWithDate"
     }
