@@ -85,16 +85,20 @@ class SlackService {
             append(getCrawledInfo(investingUrl) { doc ->
                 val linksWithDate = doc.select("#contentSection .textDiv a").fold("") { acc, element ->
                     var href = element.attr("href")
-                    if (!href.startsWith("http")) {
-                        href = investingUrl + href
+                    when {
+                        !href.startsWith("http") -> {
+                            href = INVEST_URL + href
+                        }
                     }
-
-                    if (element.hasAttr("title") && element.attr("title").isNotEmpty()) {
-                        // 연관된 date 값을 찾습니다. 구조에 따라 적절히 수정할 필요가 있습니다.
-                        val date = element.parent().select(".articleDetails .date").text() // 부모 또는 관련 요소에서 date를 찾음
-                        acc + "<$href|${element.text()}> - $date\n"
-                    } else {
-                        acc
+                    when {
+                        element.hasAttr("title") && element.attr("title").isNotEmpty() -> {
+                            // 연관된 date 값을 찾습니다. 구조에 따라 적절히 수정할 필요가 있습니다.
+                            val date = element.parent().select(".articleDetails .date").text() // 부모 또는 관련 요소에서 date를 찾음
+                            acc + "<$href|${element.text()}> - $date\n"
+                        }
+                        else -> {
+                            acc
+                        }
                     }
                 }
                 "\n ===================================== \n :earth_americas:  인베스팅 주식 견해 입니다 :earth_americas:   \n$linksWithDate"
@@ -104,6 +108,6 @@ class SlackService {
     }
 
     companion object {
-        const val INVEST_UTL = "https://kr.investing.com"
+        const val INVEST_URL = "https://kr.investing.com"
     }
 }
