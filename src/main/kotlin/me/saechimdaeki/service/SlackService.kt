@@ -66,9 +66,13 @@ class SlackService(
     }
 
     private fun parseKoreaStockInfo(doc: Document): String {
-        return doc.select(".list_major a").joinToString(separator = "\n", prefix = "\n=====================================\n:star2: 국내 증시 주요 뉴스 입니다 :star2:\n") {
-            val href = it.attr("href")
-            "<$href|${it.text()}>\n"
+        return doc.select("li .news-item").joinToString(
+            separator = "\n",
+            prefix = "\n=====================================\n:star2: 국내 증시 주요 뉴스 입니다 :star2:\n"
+        ) { newsItem ->
+            val href = newsItem.select("h2.news-tit a").attr("href")
+            val lead = newsItem.select("p.lead").text()
+            "<$href|${newsItem.text()}>\n$lead\n"
         }
     }
 
@@ -92,6 +96,7 @@ class SlackService(
                     val date = element.parent().select(".articleDetails .date").text()
                     acc + "<$href|${element.text()}> - $date\n"
                 }
+
                 else -> {
                     acc
                 }
