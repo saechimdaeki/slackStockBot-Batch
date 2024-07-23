@@ -71,8 +71,9 @@ class SlackService(
             prefix = "\n=====================================\n:star2: 국내 증시 주요 뉴스 입니다 :star2:\n"
         ) { newsItem ->
             val head = newsItem.select("h2.news-tit a")
+            val headLine = head.first()?.text()
             val href = head.attr("href")
-            "<$href|$head>\n"
+            "<$href|$headLine>\n"
         }
     }
 
