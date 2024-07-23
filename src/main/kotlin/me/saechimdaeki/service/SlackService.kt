@@ -72,7 +72,7 @@ class SlackService(
         ) { newsItem ->
             val href = newsItem.select("h2.news-tit a").attr("href")
             val lead = newsItem.select("p.lead").text()
-            "<$href|${newsItem.text()}>\n$lead\n"
+            "<$href|${lead}>\\n"
         }
     }
 
