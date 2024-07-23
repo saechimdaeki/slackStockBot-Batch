@@ -66,15 +66,19 @@ class SlackService(
     }
 
     private fun parseKoreaStockInfo(doc: Document): String {
-        return doc.select("li .news-item").joinToString(
-            separator = "\n",
-            prefix = "\n=====================================\n:star2: 국내 증시 주요 뉴스 입니다 :star2:\n"
-        ) { newsItem ->
+        return doc.select("li .news-item").mapNotNull { newsItem ->
             val head = newsItem.select("h2.news-tit a")
             val headLine = head.first()?.text()
             val href = head.attr("href")
-            "<$href|$headLine>\n"
-        }
+            if (!headLine.isNullOrBlank() && !href.isNullOrBlank()) {
+                "<$href|$headLine>\n"
+            } else {
+                null
+            }
+        }.joinToString(
+            separator = "\n",
+            prefix = "\n=====================================\n:star2: 국내 증시 주요 뉴스 입니다 :star2:\n"
+        )
     }
 
     private fun parseGlobalStockInfo(doc: Document): String {
